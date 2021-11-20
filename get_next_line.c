@@ -1,63 +1,73 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_next_line_utils.c                              :+:      :+:    :+:   */
+/*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: migonzal <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2021/11/17 09:21:26 by migonzal          #+#    #+#             */
-/*   Updated: 2021/11/18 09:44:28 by migonzal         ###   ########.fr       */
+/*   Created: 2021/11/20 13:49:17 by migonzal          #+#    #+#             */
+/*   Updated: 2021/11/20 15:36:20 by migonzal         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+#include "get_next_line.h"
 
-
-
-size_t ft_strlen(const char *s)
+static char	*ft_free(char **file)
 {
-	size_t i;
-
-	i = 0;
-	while(s[i])
-		i++;
-	return (i);
+	if (*file)
+	{
+		free(*file);
+		*file = NULL;
+	}
+	return (NULL);
 }
-
-char *ft_strdup(char *s)
+static char	*get_line(char **file, int fd)
 {
-	char	*ret;
-	int	i;
+	char	*aux;
+	char	*line;
+	int		i;
 
-	ret = (char *)malloc(sizeof(char) * (ft_strlen(s) + 1));
-	if (!ret)
+	if (!file[fd])
 		return (NULL);
-	i = 0;
-	while (*s)
-		ret[i++] = *s++;
-	ret[i] ='\0';
-	return (ret);
+	aux = file[fd];
+	i = ft_search(aux, '\n');
+	if (i == -1)
+	{
+		if (ft_strlen(aux) <= 0)
+			return (ft_free(file + fd));
+		line = ft_strdup(aux);
+		ft_free(&aux);
+		file[fd] = NULL;
+		return (line);
+	}
+	line = ft_substr(aux, 0, i + 1);
+	file[fd] = ft_substr(aux, i + 1, (ft_strlen(aux) - i));
+	ft_free(&aux);
+	return (line);
 }
 
-int search(char *s, char c)
+char	*get_next_line(int fd)
 {
-	while(*s)
-		if (*s++ == c)
-			return (1);
-	return (0);
-}
+	char		buf[BUFFER_SIZE + 1];
+	static char	*file[FD_SIZE];
+	int			ret;
 
-char *ft_strjoin(char *s1, char *s2)
-{
-	char	*ret;
-	int	i;
-
-	ret (char *)malloc((ft_strlen(s1) + ft_strlen(s2) + 1) * sizeof(char));
-	if (!ret)
+	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-	i = 0;
-	while (*s1)
-		ret[i++] = *s1++;
-	while (*s2)
-		ret[i++] = *s2++;
-	ret[i] ='\0';
-	return (ret);
+	if (!file[fd])
+		file[fd] = ft_strdup("");
+	ret = 1;
+	while (ret > 0)
+	{
+		if (ft_search(file[fd], '\n') == -1)
+		{
+			ret = read(fd, buf, BUFFER_SIZE);
+			if (ret == -1)
+				return (ft_free(file + fd));
+			buf[ret] = '\0';
+			file[fd] = ft_strjoin(file[fd], buf);
+		}
+		else
+			return (get_line(file, fd));
+	}
+	return (get_line(file, fd));
 }
